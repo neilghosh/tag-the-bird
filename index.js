@@ -1,8 +1,11 @@
-const http = require("http");
+//const http = require("http");
 const https = require("https");
 const url = require("url");
 const { google } = require("googleapis");
+const express = require("express");
+const session = require("express-session");
 
+const app = express();
 
 const port = parseInt(process.env.PORT) || 3000;
 
@@ -17,6 +20,7 @@ const oauth2Client = new google.auth.OAuth2(
   process.env.REDIRECT_URL
 );
 
+console.log("Redirect URL :" + process.env.REDIRECT_URL);
 // Access scopes for read-only Drive activity.
 const scopes = ["https://www.googleapis.com/auth/photoslibrary.readonly"];
 
@@ -40,7 +44,7 @@ const authorizationUrl = oauth2Client.generateAuthUrl({
  */
 let userCredential = null;
 
-function getAlbums(tokens) {
+function getAlbums(access_token) {
   const options = {
     hostname: "photoslibrary.googleapis.com",
     port: 443,
@@ -48,7 +52,7 @@ function getAlbums(tokens) {
     method: "GET",
     headers: {
       "Content-Type": "application/json",
-      Authorization: "Bearer " + tokens.access_token,
+      Authorization: "Bearer " + access_token,
     },
   };
 
@@ -76,77 +80,82 @@ function getAlbums(tokens) {
 }
 
 async function main() {
-  const server = http
-    .createServer(async function (req, res) {
-      // Example on redirecting user to Google's OAuth 2.0 server.
-      if (req.url == "/") {
-        res.writeHead(301, { Location: authorizationUrl });
-      }
+  app.listen(port, () => {
+    console.log(`Example app listening on port ${port}`);
+  });
 
-      // Receive the callback from Google's OAuth 2.0 server.
-      if (req.url.startsWith("/oauth2callback")) {
-        // Handle the OAuth 2.0 server response
-        let q = url.parse(req.url, true).query;
+  app.use(session({ secret: "asdfneil", cookie: { maxAge: 60000 } }));
 
-        if (q.error) {
-          // An error response e.g. error=access_denied
-          console.log("Error:" + q.error);
-        } else {
-          // Get access and refresh tokens (if access_type is offline)
-          let { tokens } = await oauth2Client.getToken(q.code);
-          oauth2Client.setCredentials(tokens);
+  app.get("/", (req, res) => {
+    res.writeHead(301, { Location: authorizationUrl });
+    res.end();
+  });
 
-          /** Save credential to the global variable in case access token was refreshed.
-           * ACTION ITEM: In a production app, you likely want to save the refresh token
-           *              in a secure persistent database instead. */
-          userCredential = tokens;
-          console.log(userCredential);
-          // Example of using Google Drive API to list filenames in user's Drive.
-          //Authorization: Bearer oauth2-token
+  app.get("/oauth2callback", async (req, res) => {
+    let q = url.parse(req.url, true).query;
+    if (q.error) {
+      // An error response e.g. error=access_denied
+      console.log("Error:" + q.error);
+    } else {
+      // Get access and refresh tokens (if access_type is offline)
+      let { tokens } = await oauth2Client.getToken(q.code);
+      oauth2Client.setCredentials(tokens);
 
-          const albums = await getAlbums(userCredential);
-          console.log(albums);
-          res.setHeader("Content-Type", "application/json");
-          res.write(JSON.stringify(albums));
-        }
-      }
+      /** Save credential to the global variable in case access token was refreshed.
+       * ACTION ITEM: In a production app, you likely want to save the refresh token
+       *              in a secure persistent database instead. */
+      userCredential = tokens;
+      console.log(userCredential);
+      // Example of using Google Drive API to list filenames in user's Drive.
+      //Authorization: Bearer oauth2-token
+      req.session.access_token = userCredential.access_token;
 
-      // Example on revoking a token
-      if (req.url == "/revoke") {
-        // Build the string for the POST request
-        let postData = "token=" + userCredential.access_token;
-
-        // Options for POST request to Google's OAuth 2.0 server to revoke a token
-        let postOptions = {
-          host: "oauth2.googleapis.com",
-          port: "443",
-          path: "/revoke",
-          method: "POST",
-          headers: {
-            "Content-Type": "application/x-www-form-urlencoded",
-            "Content-Length": Buffer.byteLength(postData),
-          },
-        };
-
-        // Set up the request
-        const postReq = https.request(postOptions, function (res) {
-          res.setEncoding("utf8");
-          res.on("data", (d) => {
-            console.log("Response: " + d);
-          });
-        });
-
-        postReq.on("error", (error) => {
-          console.log(error);
-        });
-
-        // Post the request with data
-        postReq.write(postData);
-        postReq.end();
-      }
+      res.setHeader("Content-Type", "application/json");
+      res.write('{"loggedIn":"success"}');
       res.end();
-    })
-    .listen(port);
-    console.log(`listening on port ${port}`);
+    }
+  });
+
+  app.get("/getalbums", async (req, res) => {
+    access_token = req.session.access_token;
+    const albums = await getAlbums(access_token);
+    console.log(albums.length);
+    res.write(JSON.stringify(albums));
+    res.end();
+  });
+
+  app.get("/", (req, res) => {
+    // Build the string for the POST request
+    let postData = "token=" + userCredential.access_token;
+
+    // Options for POST request to Google's OAuth 2.0 server to revoke a token
+    let postOptions = {
+      host: "oauth2.googleapis.com",
+      port: "443",
+      path: "/revoke",
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        "Content-Length": Buffer.byteLength(postData),
+      },
+    };
+
+    // Set up the request
+    const postReq = https.request(postOptions, function (res) {
+      res.setEncoding("utf8");
+      res.on("data", (d) => {
+        console.log("Response: " + d);
+      });
+    });
+
+    postReq.on("error", (error) => {
+      console.log(error);
+    });
+
+    // Post the request with data
+    postReq.write(postData);
+    postReq.end();
+  });
 }
+
 main().catch(console.error);
