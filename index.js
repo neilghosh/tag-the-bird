@@ -6,7 +6,8 @@ const express = require("express");
 const session = require("express-session");
 
 const app = express();
-
+app.use(express.static('public'))
+app.set("view engine", "ejs");
 const port = parseInt(process.env.PORT) || 3000;
 
 /**
@@ -98,20 +99,22 @@ async function main() {
       console.log("Error:" + q.error);
     } else {
       // Get access and refresh tokens (if access_type is offline)
-      let { tokens } = await oauth2Client.getToken(q.code);
-      oauth2Client.setCredentials(tokens);
+      let response = await oauth2Client.getToken(q.code);
+      oauth2Client.setCredentials(response.tokens);
 
       /** Save credential to the global variable in case access token was refreshed.
        * ACTION ITEM: In a production app, you likely want to save the refresh token
        *              in a secure persistent database instead. */
-      userCredential = tokens;
-      console.log(userCredential);
+      userCredential = response.tokens;
+      //const userInfo = JSON.parse(Buffer.from(response.tokens.id_token.split('.')[1], 'base64').toString());
+      //console.log(userInfo);
       // Example of using Google Drive API to list filenames in user's Drive.
       //Authorization: Bearer oauth2-token
       req.session.access_token = userCredential.access_token;
 
-      res.setHeader("Content-Type", "application/json");
-      res.write('{"loggedIn":"success"}');
+      // res.setHeader("Content-Type", "application/json");
+      // res.write('{"loggedIn":"success"}');
+      res.writeHead(301, { Location: "home.html" });
       res.end();
     }
   });
@@ -120,13 +123,18 @@ async function main() {
     access_token = req.session.access_token;
     const albums = await getAlbums(access_token);
     console.log(albums.length);
-    res.write(JSON.stringify(albums));
-    res.end();
+    //res.write(JSON.stringify(albums));
+    res.render("albums",{
+      username: "neil",
+      albums: albums
+    }); // index refers to index.ejs
+    //res.end();
   });
 
-  app.get("/", (req, res) => {
+  app.get("/logout", (req, logoutResponse) => {
     // Build the string for the POST request
-    let postData = "token=" + userCredential.access_token;
+    let postData = "token=" + req.session.access_token;
+    ;
 
     // Options for POST request to Google's OAuth 2.0 server to revoke a token
     let postOptions = {
@@ -145,11 +153,15 @@ async function main() {
       res.setEncoding("utf8");
       res.on("data", (d) => {
         console.log("Response: " + d);
+        //logoutResponse.send("Logged Out")
+        logoutResponse.writeHead(301, { Location: "/" });
+        logoutResponse.end();
       });
     });
 
     postReq.on("error", (error) => {
       console.log(error);
+      logoutResponse.send("Error Logging Out")
     });
 
     // Post the request with data
