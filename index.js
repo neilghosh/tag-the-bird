@@ -4,8 +4,8 @@ const url = require("url");
 const { google } = require("googleapis");
 const express = require("express");
 const session = require("express-session");
-const {v4: uuidv4} = require('uuid');
-const fs = require('fs'); 
+const { v4: uuidv4 } = require('uuid');
+const fs = require('fs');
 const Stream = require('stream').Transform;
 
 const app = express();
@@ -129,20 +129,23 @@ function identify(photoId, access_token) {
   //save to disk
   const url = photoId;
   const uuid = uuidv4();
-  https
-    .request(url, function (response) {
-      var data = new Stream();
+  return new Promise((resolve, reject) => {
+    https
+      .request(url, function (response) {
+        var data = new Stream();
 
-      response.on("data", function (chunk) {
-        data.push(chunk);
-      });
+        response.on("data", function (chunk) {
+          data.push(chunk);
+        });
 
-      response.on("end", function () {
-        fs.writeFileSync("/tmp/" + uuid, data.read());
-      });
-    })
-    .end();
-
+        response.on("end", function () {
+          fs.writeFileSync("/tmp/" + uuid, data.read());
+          console.log("copied "+ "/tmp/" + uuid);
+          resolve(uuid);
+        });
+      })
+      .end();
+  });
   // const postData = JSON.stringify({
   //   albumId: albumId,
   // });
@@ -249,9 +252,29 @@ async function main() {
   app.get("/identify", async (req, res) => {
     access_token = req.session.access_token;
     photoId = req.query.photoid;
-    const photoIdRes = await identify(photoId, access_token);
+    const uuid = await identify(photoId, access_token);
     //console.log(mediaItems.mediaItems.length);
-    res.write(JSON.stringify(photoIdRes));
+    console.log(uuid);
+    //res.write("Copied");
+
+    // Imports the Google Cloud client library
+    const vision = require('@google-cloud/vision');
+
+    // Creates a client
+    const client = new vision.ImageAnnotatorClient();
+
+    /**
+     * TODO(developer): Uncomment the following line before running the sample.
+     */
+    // const fileName = 'Local image file, e.g. /path/to/image.png';
+
+    // Performs label detection on the local file
+    const [result] = await client.labelDetection("/tmp/"+uuid);
+    const labels = result.labelAnnotations;
+    console.log('Labels:');
+    labels.forEach(label => console.log(label.description));
+    res.write(JSON.stringify(labels));
+
     // res.render("photos",{
     //   username: "neil",
     //   mediaItems: mediaItems
