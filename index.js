@@ -4,9 +4,12 @@ const url = require("url");
 const { google } = require("googleapis");
 const express = require("express");
 const session = require("express-session");
+const {v4: uuidv4} = require('uuid');
+const fs = require('fs'); 
+const Stream = require('stream').Transform;
 
 const app = express();
-app.use(express.static('public'))
+app.use(express.static("public"));
 app.set("view engine", "ejs");
 const port = parseInt(process.env.PORT) || 3000;
 
@@ -80,6 +83,105 @@ function getAlbums(access_token) {
   });
 }
 
+function getPhotos(albumId, access_token) {
+  console.log("Getting content of album " + albumId);
+  const postData = JSON.stringify({
+    albumId: albumId,
+  });
+  const options = {
+    hostname: "photoslibrary.googleapis.com",
+    port: 443,
+    path: "/v1/mediaItems:search",
+    method: "POST",
+    body: postData,
+    headers: {
+      "Content-Type": "application/json",
+      "Content-Length": postData.length,
+      Authorization: "Bearer " + access_token,
+    },
+  };
+  console.log(options);
+  return new Promise((resolve, reject) => {
+    const req = https.request(options, (res) => {
+      res.setEncoding("utf8");
+      let responseBody = "";
+
+      res.on("data", (chunk) => {
+        responseBody += chunk;
+      });
+
+      res.on("end", () => {
+        resolve(JSON.parse(responseBody));
+      });
+    });
+
+    req.on("error", (err) => {
+      reject(err);
+    });
+
+    req.write(postData);
+    req.end();
+  });
+}
+
+function identify(photoId, access_token) {
+  console.log("Identifying objects in " + photoId);
+  //save to disk
+  const url = photoId;
+  const uuid = uuidv4();
+  https
+    .request(url, function (response) {
+      var data = new Stream();
+
+      response.on("data", function (chunk) {
+        data.push(chunk);
+      });
+
+      response.on("end", function () {
+        fs.writeFileSync("/tmp/" + uuid, data.read());
+      });
+    })
+    .end();
+
+  const postData = JSON.stringify({
+    albumId: albumId,
+  });
+  const options = {
+    hostname: "photoslibrary.googleapis.com",
+    port: 443,
+    path: "/v1/mediaItems:search",
+    method: "POST",
+    body: postData,
+    headers: {
+      "Content-Type": "application/json",
+      "Content-Length": postData.length,
+      Authorization: "Bearer " + access_token,
+    },
+  };
+  console.log(options);
+  return new Promise((resolve, reject) => {
+    const req = https.request(options, (res) => {
+      res.setEncoding("utf8");
+      let responseBody = "";
+
+      res.on("data", (chunk) => {
+        responseBody += chunk;
+      });
+
+      res.on("end", () => {
+        resolve(JSON.parse(responseBody));
+      });
+    });
+
+    req.on("error", (err) => {
+      reject(err);
+    });
+
+    req.write(postData);
+    req.end();
+  });
+}
+
 async function main() {
   app.listen(port, () => {
     console.log(`Example app listening on port ${port}`);
@@ -122,20 +224,44 @@ async function main() {
   app.get("/getalbums", async (req, res) => {
     access_token = req.session.access_token;
     const albums = await getAlbums(access_token);
-    console.log(albums.length);
+    console.log("Found albums :" + albums.albums.length);
     //res.write(JSON.stringify(albums));
-    res.render("albums",{
+    res.render("albums", {
       username: "neil",
-      albums: albums
+      albums: albums,
     }); // index refers to index.ejs
     //res.end();
+  });
+
+  app.get("/getphotos", async (req, res) => {
+    access_token = req.session.access_token;
+    albumId = req.query.albumid;
+    const mediaItems = await getPhotos(albumId, access_token);
+    console.log(mediaItems.mediaItems.length);
+    //res.write(JSON.stringify(mediaItems));
+    res.render("photos", {
+      username: "neil",
+      mediaItems: mediaItems,
+    }); // index refers to index.ejs
+    res.end();
+  });
+  //identify
+  app.get("/identify", async (req, res) => {
+    access_token = req.session.access_token;
+    photoId = req.query.photoid;
+    const photoIdRes = await identify(photoId, access_token);
+    //console.log(mediaItems.mediaItems.length);
+    res.write(JSON.stringify(photoIdRes));
+    // res.render("photos",{
+    //   username: "neil",
+    //   mediaItems: mediaItems
+    // }); // index refers to index.ejs
+    res.end();
   });
 
   app.get("/logout", (req, logoutResponse) => {
     // Build the string for the POST request
     let postData = "token=" + req.session.access_token;
-    ;
-
     // Options for POST request to Google's OAuth 2.0 server to revoke a token
     let postOptions = {
       host: "oauth2.googleapis.com",
@@ -161,7 +287,7 @@ async function main() {
 
     postReq.on("error", (error) => {
       console.log(error);
-      logoutResponse.send("Error Logging Out")
+      logoutResponse.send("Error Logging Out");
     });
 
     // Post the request with data

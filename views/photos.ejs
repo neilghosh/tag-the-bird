@@ -9,15 +9,17 @@
 
 <body>
   <a href="./">Home</a>
+  <a href="./getalbums">GET ALBUMS</a>
   <a href="./logout">Log Out</a>
   <h1>Welcome <%=username%>,</h1>
-  <% albums.albums.forEach(function(album) { %>
+  <% mediaItems.mediaItems.forEach(function(mediaItem) { %>
     <li>
-      <h3><a href="/getphotos?albumid=<%=album.id%>">
-          <%=album.title%>
+      <h3><a href="<%=mediaItem.productUrl%>">
+          <%=mediaItem.id%>
         </a></h3>
       <p>
-        <img src="<%=album.coverPhotoBaseUrl%>=w300-h300" />
+        <img src="<%=mediaItem.baseUrl%>=w300-h300" />
+        <a href="./identify">Identify</a>
       </p>
     </li>
     <% })%>
