@@ -7,6 +7,7 @@ const session = require("express-session");
 const { v4: uuidv4 } = require('uuid');
 const fs = require('fs');
 const Stream = require('stream').Transform;
+const vision = require('@google-cloud/vision');
 
 const app = express();
 app.use(express.static("public"));
@@ -245,6 +246,7 @@ async function main() {
     res.render("photos", {
       username: "neil",
       mediaItems: mediaItems,
+      access_token : access_token
     }); // index refers to index.ejs
     res.end();
   });
@@ -255,21 +257,14 @@ async function main() {
     const uuid = await identify(photoId, access_token);
     //console.log(mediaItems.mediaItems.length);
     console.log(uuid);
-    //res.write("Copied");
-
-    // Imports the Google Cloud client library
-    const vision = require('@google-cloud/vision');
 
     // Creates a client
     const client = new vision.ImageAnnotatorClient();
 
-    /**
-     * TODO(developer): Uncomment the following line before running the sample.
-     */
-    // const fileName = 'Local image file, e.g. /path/to/image.png';
+    const fileName = "/tmp/"+uuid;
 
     // Performs label detection on the local file
-    const [result] = await client.labelDetection("/tmp/"+uuid);
+    const [result] = await client.labelDetection(fileName);
     const labels = result.labelAnnotations;
     console.log('Labels:');
     labels.forEach(label => console.log(label.description));
