@@ -143,43 +143,43 @@ function identify(photoId, access_token) {
     })
     .end();
 
-  const postData = JSON.stringify({
-    albumId: albumId,
-  });
-  const options = {
-    hostname: "photoslibrary.googleapis.com",
-    port: 443,
-    path: "/v1/mediaItems:search",
-    method: "POST",
-    body: postData,
-    headers: {
-      "Content-Type": "application/json",
-      "Content-Length": postData.length,
-      Authorization: "Bearer " + access_token,
-    },
-  };
-  console.log(options);
-  return new Promise((resolve, reject) => {
-    const req = https.request(options, (res) => {
-      res.setEncoding("utf8");
-      let responseBody = "";
+  // const postData = JSON.stringify({
+  //   albumId: albumId,
+  // });
+  // const options = {
+  //   hostname: "photoslibrary.googleapis.com",
+  //   port: 443,
+  //   path: "/v1/mediaItems:search",
+  //   method: "POST",
+  //   body: postData,
+  //   headers: {
+  //     "Content-Type": "application/json",
+  //     "Content-Length": postData.length,
+  //     Authorization: "Bearer " + access_token,
+  //   },
+  // };
+  // console.log(options);
+  // return new Promise((resolve, reject) => {
+  //   const req = https.request(options, (res) => {
+  //     res.setEncoding("utf8");
+  //     let responseBody = "";
 
-      res.on("data", (chunk) => {
-        responseBody += chunk;
-      });
+  //     res.on("data", (chunk) => {
+  //       responseBody += chunk;
+  //     });
 
-      res.on("end", () => {
-        resolve(JSON.parse(responseBody));
-      });
-    });
+  //     res.on("end", () => {
+  //       resolve(JSON.parse(responseBody));
+  //     });
+  //   });
 
-    req.on("error", (err) => {
-      reject(err);
-    });
+  //   req.on("error", (err) => {
+  //     reject(err);
+  //   });
 
-    req.write(postData);
-    req.end();
-  });
+  //   req.write(postData);
+  //   req.end();
+  // });
 }
 
 async function main() {
