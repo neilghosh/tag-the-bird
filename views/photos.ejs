@@ -17,6 +17,7 @@
         } else { // show the result
           //alert(`Done, got ${xhr.response} bytes`); // response is the server response
           var node = document.getElementById('labels_' + mediaId);
+          node.replaceChildren();
           JSON.parse(xhr.response).forEach(label => {
             console.log(label.description)
             let li = document.createElement("li");
@@ -34,19 +35,23 @@
   <a href="./getalbums">GET ALBUMS</a>
   <a href="./logout">Log Out</a>
   <h1>Welcome <%=username%>,</h1>
-  <% mediaItems.mediaItems.forEach(function(mediaItem) { %>
-    <li>
-      <h3><a href="<%=mediaItem.productUrl%>">
-          <%=mediaItem.id%>
-        </a></h3>
-      <p>
-        <img src="<%=mediaItem.baseUrl%>=w300-h300" />
-        <a href="./identify?photoid=<%=mediaItem.baseUrl%>">Identify</a>
-        <button onclick="getLabels('<%=mediaItem.baseUrl%>', '<%=mediaItem.id%>')">getLabels</button>
-      <ul id="labels_<%=mediaItem.id%>"></ul>
-      </p>
-    </li>
-    <% })%>
+  <table>
+
+    <% mediaItems.mediaItems.forEach(function(mediaItem) { %>
+      <tr>
+        <td>
+          <h3><a href="<%=mediaItem.productUrl%>">
+              <%=mediaItem.filename%>
+            </a></h3>
+          <img src="<%=mediaItem.baseUrl%>=w300-h300" />
+        </td>
+        <td>
+          <button onclick="getLabels('<%=mediaItem.baseUrl%>', '<%=mediaItem.id%>')">getLabels</button>
+          <ul id="labels_<%=mediaItem.id%>"></ul>
+        </td>
+      </tr>
+      <% })%>
+  </table>
 </body>
 
 </html>
