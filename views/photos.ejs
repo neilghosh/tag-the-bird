@@ -6,9 +6,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Photos Album</title>
   <script>
-    function getLabels(photoId, mediaId) {
+    function getLabels(photoId, mediaId, detectObject) {
       var xhr = new XMLHttpRequest();
-      xhr.open('GET', '/identify?photoid=' + photoId, true);
+      xhr.open('GET', '/identify?photoid=' + photoId + '&detectobject='+detectObject, true);
       xhr.withCredentials = true;
       xhr.send(null);
       xhr.onload = function () {
@@ -46,8 +46,12 @@
           <img src="<%=mediaItem.baseUrl%>=w300-h300" />
         </td>
         <td>
-          <button onclick="getLabels('<%=mediaItem.baseUrl%>', '<%=mediaItem.id%>')">getLabels</button>
+          <button onclick="getLabels('<%=mediaItem.baseUrl%>', '<%=mediaItem.id%>', 'false')">getLabels</button>
           <ul id="labels_<%=mediaItem.id%>"></ul>
+        </td>
+        <td>
+          <button onclick="getLabels('<%=mediaItem.baseUrl%>', '<%=mediaItem.id%>', 'true')">getLabels</button>
+          <ul id="objects_<%=mediaItem.id%>"></ul>
         </td>
       </tr>
       <% })%>
