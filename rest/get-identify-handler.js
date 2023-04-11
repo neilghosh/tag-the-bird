@@ -67,7 +67,7 @@ const getIdentifyHandler = async (req, res) => {
       try {
         //TODO we dont know which one is well formatted json so taking a chance on every one.
         values = JSON.parse(object[0].substring(5))[2][3][0][0][2];
-        continue;
+        break;
       } catch (error) {
         console.log("Unable to parse ", object[0].substring(5));
       }
@@ -75,9 +75,10 @@ const getIdentifyHandler = async (req, res) => {
 
     const labels = [];
     for (const label of values) {
-      labels.push({ description: label[2] });
+      labels.push({ description: label[2], confidence: label[3] });
     }
     res.write(JSON.stringify(labels));
+    console.log("Response", labels)
     res.end();
   } else {
     const uuid = await identify(photoId, access_token);

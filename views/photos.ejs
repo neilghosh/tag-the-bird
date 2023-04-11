@@ -7,12 +7,13 @@
   <title>Photos Album</title>
   <script>
     function getLabels(photoId, mediaId, detectObject) {
+      document.getElementById('labels_' + mediaId).innerText = "Getting...";
       var xhr = new XMLHttpRequest();
       xhr.open('GET', '/identify?photoid=' + photoId + '&detectobject='+detectObject, true);
       xhr.withCredentials = true;
       xhr.send(null);
       xhr.onload = function () {
-        if (xhr.status != 200) { // analyze HTTP status of the response
+        if (xhr.status != 200 || xhr.response.length === 0 ) { // analyze HTTP status of the response
           alert(`Error ${xhr.status}: ${xhr.statusText}`); // e.g. 404: Not Found
         } else { // show the result
           //alert(`Done, got ${xhr.response} bytes`); // response is the server response
@@ -21,7 +22,7 @@
           JSON.parse(xhr.response).forEach(label => {
             console.log(label.description)
             let li = document.createElement("li");
-            li.textContent = label.description;
+            li.textContent = label.description + " [" +label.confidence+ "] ";
             node.appendChild(li);
           })
         }
@@ -46,12 +47,11 @@
           <img src="<%=mediaItem.baseUrl%>=w300-h300" />
         </td>
         <td>
-          <button onclick="getLabels('<%=mediaItem.baseUrl%>', '<%=mediaItem.id%>', 'false')">getLabels</button>
-          <ul id="labels_<%=mediaItem.id%>"></ul>
+          <button id="getLabels" onclick="getLabels('<%=mediaItem.baseUrl%>', '<%=mediaItem.id%>', 'false')">Get Labels</button>
+          <button id="getObjects" onclick="getLabels('<%=mediaItem.baseUrl%>', '<%=mediaItem.id%>', 'true')">Get Objects</button>
         </td>
         <td>
-          <button onclick="getLabels('<%=mediaItem.baseUrl%>', '<%=mediaItem.id%>', 'true')">getLabels</button>
-          <ul id="objects_<%=mediaItem.id%>"></ul>
+          <ul id="labels_<%=mediaItem.id%>"></ul>
         </td>
       </tr>
       <% })%>
