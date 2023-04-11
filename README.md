@@ -8,5 +8,7 @@ set .env file
 ```
 CLIENT_ID=""
 CLIENT_SECRET=""
-REDIRECT_URL="https://neilghosh-crispy-barnacle-x64x955v72vqxr-3000.preview.app.github.dev/oauth2callback" ## code space url
+REDIRECT_URL="http://localhost/oauth2callback" ## code space url if used
 ```
+
+Run `Launch Server`
