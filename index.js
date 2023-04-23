@@ -6,6 +6,8 @@ const { getPhotosHandler } = require("./rest/get-photos-handler");
 const { getAlbumHandler } = require("./rest/get-albums-handler");
 const { getIdentifyHandler } = require("./rest/get-identify-handler");
 const { getLogoutHandler } = require("./rest/get-logout-handler");
+const { updatePhotoHandler } = require("./rest/update-photo-handler");
+
 const {
   oauth2CallbackHandler,
   getAuthUrl,
@@ -38,6 +40,7 @@ async function main() {
   app.get("/getphotos", getPhotosHandler);
   app.get("/identify", getIdentifyHandler);
   app.get("/logout", getLogoutHandler);
+  app.get("/updatephoto", updatePhotoHandler);
 }
 
 main().catch(console.error);

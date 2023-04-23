@@ -6,14 +6,30 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Photos Album</title>
   <script>
-    function getLabels(photoId, mediaId, detectObject) {
-      document.getElementById('labels_' + mediaId).innerText = "Getting...";
+    function setLabels(description, mediaId, photoId) {
+      alert('Setting description '+description+" -> "+mediaId);
+      document.getElementById('labels_' + mediaId).innerText = "Setting...";
       var xhr = new XMLHttpRequest();
-      xhr.open('GET', '/identify?photoid=' + photoId + '&detectobject='+detectObject, true);
+      xhr.open('GET', '/updatephoto?photoid=' + photoId + '&description=' + description, true);
       xhr.withCredentials = true;
       xhr.send(null);
       xhr.onload = function () {
-        if (xhr.status != 200 || xhr.response.length === 0 ) { // analyze HTTP status of the response
+        if (xhr.status != 200 || xhr.response.length === 0) { // analyze HTTP status of the response
+          alert(`Error ${xhr.status}: ${xhr.statusText}`); // e.g. 404: Not Found
+        } else { // show the result
+          document.getElementById('labels_' + mediaId).innerText = "Get Objects";
+        }
+      };
+    }
+
+    function getLabels(photoId, mediaId, detectObject) {
+      document.getElementById('labels_' + mediaId).innerText = "Getting...";
+      var xhr = new XMLHttpRequest();
+      xhr.open('GET', '/identify?photoid=' + photoId + '&detectobject=' + detectObject, true);
+      xhr.withCredentials = true;
+      xhr.send(null);
+      xhr.onload = function () {
+        if (xhr.status != 200 || xhr.response.length === 0) { // analyze HTTP status of the response
           alert(`Error ${xhr.status}: ${xhr.statusText}`); // e.g. 404: Not Found
         } else { // show the result
           //alert(`Done, got ${xhr.response} bytes`); // response is the server response
@@ -22,7 +38,7 @@
           JSON.parse(xhr.response).forEach(label => {
             console.log(label.description)
             let li = document.createElement("li");
-            li.textContent = label.description + " [" +label.confidence+ "] ";
+            li.innerHTML = "<a href=\"javascript:setLabels(`" + label.description + "`, `" + mediaId + "`, `" + photoId + "`)\">" + label.description + "</a>" + " [" + label.confidence + "] ";
             node.appendChild(li);
           })
         }
@@ -47,8 +63,10 @@
           <img src="<%=mediaItem.baseUrl%>=w300-h300" />
         </td>
         <td>
-          <button id="getLabels" onclick="getLabels('<%=mediaItem.baseUrl%>', '<%=mediaItem.id%>', 'false')">Get Labels</button>
-          <button id="getObjects" onclick="getLabels('<%=mediaItem.baseUrl%>', '<%=mediaItem.id%>', 'true')">Get Objects</button>
+          <button id="getLabels" onclick="getLabels('<%=mediaItem.baseUrl%>', '<%=mediaItem.id%>', 'false')">Get
+            Labels</button>
+          <button id="getObjects" onclick="getLabels('<%=mediaItem.baseUrl%>', '<%=mediaItem.id%>', 'true')">Get
+            Objects</button>
         </td>
         <td>
           <ul id="labels_<%=mediaItem.id%>"></ul>

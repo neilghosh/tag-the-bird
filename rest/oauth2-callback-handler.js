@@ -25,7 +25,8 @@ const oauth2Client = new google.auth.OAuth2(
 
 console.log("Redirect URL :" + process.env.REDIRECT_URL);
 // Access scopes for read-only Drive activity.
-const scopes = ["https://www.googleapis.com/auth/photoslibrary.readonly"];
+const scopes = ["https://www.googleapis.com/auth/photoslibrary.readonly"
+               ,"https://www.googleapis.com/auth/photoslibrary.edit.appcreateddata"];
 
 // Generate a url that asks permissions for the Drive activity scope
 const authorizationUrl = oauth2Client.generateAuthUrl({
